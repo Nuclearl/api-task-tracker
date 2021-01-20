@@ -40,8 +40,35 @@ class BoardView(APIView):
 
 
 class TaskView(APIView):
-    def get(self, request, pk):
-        tasks = get_object_or_404(Task.objects.all(), board_id=pk)
-        print(tasks)
-        serializer = TaskSerializer(tasks)
-        return Response({"boards": serializer.data})
+    def get(self, request, pk = None, pk1 = None):
+        print(pk)
+        if pk:
+            if pk1:
+                tasks = get_object_or_404(Task.objects.all(), board_id=pk, pk = pk1)
+            else:
+                tasks = get_object_or_404(Task.objects.all(), board_id=pk)
+            serializer = TaskSerializer(tasks)
+        else:
+            tasks = Task.objects.all()
+            serializer = TaskSerializer(tasks, many=True)
+        return Response({"tasks": serializer.data})
+
+    def post(self, request):
+        board = request.data.get('task')
+        serializer = TaskSerializer(data=board)
+        if serializer.is_valid(raise_exception=True):
+            task_saved = serializer.save()
+        return Response({"success": f"Task {task_saved.title} created successful"})
+
+    def put(self, request, pk, pk1):
+        saved_task = get_object_or_404(Task.objects.all(), board_id=pk, pk=pk1)
+        data = request.data.get('task')
+        serializer = TaskSerializer(instance=saved_task, data=data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            task_saved = serializer.save()
+        return Response({"success": f"Task {task_saved.title} updated successful"})
+
+    def delete(self, request, pk ,pk1):
+        task = get_object_or_404(Task.objects.all(), board_id=pk, pk=pk1)
+        task.delete()
+        return Response({"message": f"Task {pk} has been deleted"}, status=204)
